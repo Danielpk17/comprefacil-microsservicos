@@ -1,0 +1,20 @@
+{
+  "name": "payment-service",
+  "version": "1.0.0",
+  "description": "Microsserviço de pagamentos da CompreFácil (REST + AMQP)",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js"
+  },
+  "engines": {
+    "node": ">=22"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "amqplib": "^2.2.0",
+    "express": "^5.3.0",
+    "pg": "^8.23.1"
+  }
+}

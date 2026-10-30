@@ -1,0 +1,32 @@
+@payment = http://localhost:4000
+@notification = http://localhost:4001
+
+### Solicitar pagamento
+# @name createPayment
+POST {{payment}}/payments
+Content-Type: application/json
+
+{
+  "userId": "10",
+  "customerEmail": "cliente@comprefacil.com.br",
+  "orderNumber": "1001",
+  "amount": 259.90
+}
+
+### Consultar a transação (PENDING logo após o POST, SUCCESS alguns segundos depois)
+GET {{payment}}/payments/{{createPayment.response.body.id}}
+
+### Listar transações de um usuário
+GET {{payment}}/payments?userId=10
+
+### Notificações enviadas para a transação
+GET {{notification}}/notifications?transactionId={{createPayment.response.body.id}}
+
+### Notificações de um usuário
+GET {{notification}}/notifications?userId=10
+
+### Saúde dos serviços
+GET {{payment}}/health
+
+###
+GET {{notification}}/health

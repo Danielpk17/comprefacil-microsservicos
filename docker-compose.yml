@@ -1,0 +1,76 @@
+name: comprefacil
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: payment
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./docker/postgres/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d payment"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  rabbitmq:
+    image: rabbitmq:4.3-management-alpine
+    hostname: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+      - ./docker/rabbitmq/rabbitmq.conf:/etc/rabbitmq/conf.d/20-comprefacil.conf:ro
+      - ./docker/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  mailpit:
+    image: axllent/mailpit:v1.31
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+  payment-service:
+    profiles: ["apps"]
+    build: ./payment-service
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/payment
+      RABBITMQ_URL: amqp://comprefacil:comprefacil@rabbitmq:5672
+    ports:
+      - "4000:4000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  notification-service:
+    profiles: ["apps"]
+    build: ./notification-service
+    environment:
+      DATABASE_URL: postgres://postgres:postgres@postgres:5432/notification
+      RABBITMQ_URL: amqp://comprefacil:comprefacil@rabbitmq:5672
+      SMTP_HOST: mailpit
+    ports:
+      - "4001:4001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      mailpit:
+        condition: service_started
+
+volumes:
+  postgres-data:
+  rabbitmq-data:
